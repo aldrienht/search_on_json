@@ -7,17 +7,17 @@ def get_user_input(prompt)
   gets&.chomp.to_s.strip
 end
 
-def search_by_name(name, parsed_data)
+def search_by_field(name, field, parsed_data)
   begin
     # Regexp.escape(name) = escaping any characters that would have special meaning in a regular expression.
     # i = for case-insensitive
-    results = parsed_data.select { |entry| entry['full_name'].match(/#{Regexp.escape(name)}/i) }
+    results = parsed_data.select { |entry| entry[field].to_s.match(/#{Regexp.escape(name)}/i) }
 
     if results.any?
-      puts "Here are the found records for '#{name}':"
+      puts "Here are the found records for '#{name}' in the '#{field}' field:"
       results.each { |result| puts result }
     else
-      puts "No records found for '#{name}'."
+      puts "No records found for '#{name}' in the '#{field}' field."
     end
   rescue => e
     puts "An error occurred: #{e.message}"
@@ -96,24 +96,38 @@ end
 #  Main Program
 loop do
   puts "Choose an option:"
-  puts "1. Search records by name"
+  puts "1. Search records by full_name or email"
   puts "2. Find duplicate emails"
   puts "3. Load new JSON file"
-  choice = get_user_input("Enter your choice (1, 2, or 3): ").downcase
+  puts "q. Quit"
+  choice = get_user_input("Enter your choice (1, 2, 3 or q): ").downcase
 
   case choice
   when '1', '3'
     parsed_data = load_new_json_file if choice == '3'
-    user_input = get_user_input("Enter name to search in JSON file: ")
+    user_input = get_user_input("Enter keyword to search: ")
     if user_input.empty?
-      puts "Error: Please enter a valid name."
+      puts "Error: Invalid keyword."
       next
     end
-    search_by_name(user_input, parsed_data)
+
+    loop do
+      field_to_search = get_user_input("Enter the field to search in JSON (e.g., 'full_name', 'email'): ")
+      valid_field = %w[full_name email].include?(field_to_search)
+      if valid_field
+        search_by_field(user_input, field_to_search, parsed_data)
+      else
+        puts "Error: Invalid field to search, fullname or email only!"
+      end
+
+      break if valid_field
+    end
   when '2'
     find_duplicate_emails(parsed_data)
+  when 'q'
+    break
   else
-    puts "Invalid choice. Please enter 1, 2, or 3."
+    puts "Invalid choice. Please enter 1, 2, 3 or q"
   end
 
   unless search_again?
